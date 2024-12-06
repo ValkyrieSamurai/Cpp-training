@@ -1,7 +1,8 @@
 #include "Executor.h"
 
-Executor::Executor(int x, int y, char heading) {
-    pos = {x, y, heading};
+Executor::Executor(int x, int y, char heading, bool isAccelerated) {
+    this->pos = {x, y, heading};
+    this->isAccelerated = isAccelerated;
 }
 
 Executor::~Executor() = default;
@@ -36,18 +37,63 @@ void Executor::TurnRight() {
     }
 }
 
-Position Executor::Query() const {
+void Executor::Accelerate() {
+    isAccelerated = !isAccelerated;
+}
+
+Position Executor::GetPosition() const {
     return pos;
 }
 
+bool Executor::GetAccelerated() const {
+    return isAccelerated;
+}
+
+
 void Executor::Execute(const string& commands) {
-    for (char command: commands) {
-        switch (command) {
-        case 'M': MoveForward(); break;
-        case 'L': TurnLeft(); break;
-        case 'R': TurnRight(); break;
+    for (auto cmd: commands) {
+        //根据不同指令切换至对应子类的Operate操作
+        switch (cmd) {
+        case 'M': make_shared<MoveCommand>()->Operate(*this); break;
+        case 'L': make_shared<TurnLeftCommand>()->Operate(*this); break;
+        case 'R': make_shared<TurnRightCommand>()->Operate(*this); break;
+        case 'F': make_shared<FastCommand>()->Operate(*this); break;
         default: break;
         }
     }
 }
 
+//在子类中实现基类的虚函数
+void MoveCommand::Operate(Executor& executor) {
+    if (executor.GetAccelerated()) {
+        executor.MoveForward();
+        executor.MoveForward();
+    }
+    else {
+        executor.MoveForward();
+    }
+}
+
+void TurnLeftCommand::Operate(Executor& executor) {
+    if (executor.GetAccelerated()) {
+        executor.MoveForward();
+        executor.TurnLeft();
+    }
+    else {
+        executor.TurnLeft();
+    }
+}
+
+void TurnRightCommand::Operate(Executor& executor) {
+    if (executor.GetAccelerated()) {
+        executor.MoveForward();
+        executor.TurnRight();
+    }
+    else {
+        executor.TurnRight();
+    }
+}
+
+void FastCommand::Operate(Executor& executor) {
+    executor.Accelerate();
+}
